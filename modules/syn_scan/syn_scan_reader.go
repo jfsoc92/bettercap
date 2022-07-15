@@ -55,7 +55,7 @@ func (mod *SynScanner) onPacket(pkt gopacket.Packet) {
 		isIPv6 = true
 	}
 
-	if tcp.DstPort == synSourcePort && tcp.SYN && tcp.ACK {
+	if tcp.DstPort == layers.TCPPort(mod.port) && tcp.SYN && tcp.ACK {
 		atomic.AddUint64(&mod.stats.openPorts, 1)
 
 		port := int(tcp.SrcPort)

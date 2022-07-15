@@ -2,6 +2,7 @@ package syn_scan
 
 import (
 	"fmt"
+	"math/rand"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -17,8 +18,6 @@ import (
 	"github.com/google/gopacket/pcap"
 )
 
-const synSourcePort = 666
-
 type synScannerStats struct {
 	numPorts     uint64
 	numAddresses uint64
@@ -30,6 +29,7 @@ type synScannerStats struct {
 
 type SynScanner struct {
 	session.SessionModule
+	port		  int
 	addresses     []net.IP
 	startPort     int
 	endPort       int
@@ -45,6 +45,7 @@ type SynScanner struct {
 func NewSynScanner(s *session.Session) *SynScanner {
 	mod := &SynScanner{
 		SessionModule: session.NewSessionModule("syn.scan", s),
+		port:		   rand.Intn(49999 - 10000 + 1) + 10000,
 		addresses:     make([]net.IP, 0),
 		waitGroup:     &sync.WaitGroup{},
 		progressEvery: time.Duration(1) * time.Second,
@@ -118,7 +119,7 @@ func (mod *SynScanner) Configure() (err error) {
 	if mod.handle == nil {
 		if mod.handle, err = network.Capture(mod.Session.Interface.Name()); err != nil {
 			return err
-		} else if err = mod.handle.SetBPFFilter(fmt.Sprintf("tcp dst port %d", synSourcePort)); err != nil {
+		} else if err = mod.handle.SetBPFFilter(fmt.Sprintf("tcp dst port %d", mod.port)); err != nil {
 			return err
 		}
 		mod.packets = gopacket.NewPacketSource(mod.handle, mod.handle.LinkType()).Packets()
@@ -181,7 +182,7 @@ func (mod *SynScanner) scanWorker(job async.Job) {
 
 		atomic.AddUint64(&mod.stats.doneProbes, 1)
 
-		err, raw := packets.NewTCPSyn(fromIP, fromHW, scan.Address, scan.Mac, synSourcePort, dstPort)
+		err, raw := packets.NewTCPSyn(fromIP, fromHW, scan.Address, scan.Mac, mod.port, dstPort)
 		if err != nil {
 			mod.Error("error creating SYN packet: %s", err)
 			continue

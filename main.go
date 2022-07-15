@@ -100,8 +100,7 @@ func main() {
 
 func exitPrompt() bool {
 	var ans string
-	fmt.Printf("Are you sure you want to quit this session? y/n ")
-	fmt.Scan(&ans)
-
-	return strings.ToLower(ans) == "y"
+	fmt.Printf("Are you sure you want to quit this session? (y)/n ")
+	fmt.Scanln(&ans)
+	return strings.ToLower(ans) == "" || strings.ToLower(ans) == "y"
 }
